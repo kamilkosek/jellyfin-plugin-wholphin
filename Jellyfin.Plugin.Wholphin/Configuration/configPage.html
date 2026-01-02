@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Wholphin</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <div id="WholphinConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="WholphinConfigForm">
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="LoginBackgroundImageUrl">Login Background Image URL</label>
+                        <input id="LoginBackgroundImageUrl" name="LoginBackgroundImageUrl" type="text" is="emby-input" />
+                        <div class="fieldDescription">URL of the login background image.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="LoginBackgroundAlpha">Login Background Alpha</label>
+                        <input id="LoginBackgroundAlpha" name="LoginBackgroundAlpha" type="number" step="0.1" min="0" max="1" is="emby-input" />
+                        <div class="fieldDescription">Opacity value for the login background image (0.0 to 1.0).</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="LoginBackgroundBlur">Login Background Blur</label>
+                        <input id="LoginBackgroundBlur" name="LoginBackgroundBlur" type="number" step="0.5" min="0" is="emby-input" />
+                        <div class="fieldDescription">Blur value for the login background image (in dp).</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="SeerrUrl">Seerr URL</label>
+                        <input id="SeerrUrl" name="SeerrUrl" type="text" is="emby-input" />
+                        <div class="fieldDescription">URL of the Seerr instance.</div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var TemplateConfig = {
+                pluginUniqueId: 'f143773e-eb25-420f-8a30-f550347aa0a2'
+            };
+
+            document.querySelector('#WholphinConfigPage')
+                .addEventListener('pageshow', function() {
+                    console.log('Loading configuration...');
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#LoginBackgroundImageUrl').value = config.LoginBackgroundImageUrl || '';
+                        document.querySelector('#LoginBackgroundAlpha').value = config.LoginBackgroundAlpha ?? 0.2;
+                        document.querySelector('#LoginBackgroundBlur').value = config.LoginBackgroundBlur ?? 1.0;
+                        document.querySelector('#SeerrUrl').value = config.SeerrUrl || '';
+
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#WholphinConfigForm')
+                .addEventListener('submit', function(e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+                console.log('Saving configuration...');
+                ApiClient.getPluginConfiguration(TemplateConfig.pluginUniqueId).then(function (config) {
+                    config.LoginBackgroundImageUrl = document.querySelector('#LoginBackgroundImageUrl').value || '';
+                    config.LoginBackgroundAlpha = parseFloat(document.querySelector('#LoginBackgroundAlpha').value) || 0.2;
+                    config.LoginBackgroundBlur = parseFloat(document.querySelector('#LoginBackgroundBlur').value) || 1.0;
+                    config.SeerrUrl = document.querySelector('#SeerrUrl').value || '';
+
+                    ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                return false;
+            });
+
+
+            // Also bind after DOMContentLoaded and after pageshow in case Jellyfin reuses the DOM
+            document.addEventListener('DOMContentLoaded', bindProviderButtons);
+            document.querySelector('#WholphinConfigPage').addEventListener('pageshow', bindProviderButtons);
+        </script>
+    </div>
+</body>
+</html>

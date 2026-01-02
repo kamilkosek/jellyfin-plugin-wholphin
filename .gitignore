@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+.idea/
+artifacts
+deploy2.sh
+.DS_Store
+dist/
