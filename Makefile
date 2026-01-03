@@ -31,7 +31,12 @@ create-tag:
 	fi
 
 create-gh-release:
-	gh release create $(VERSION) "./dist/$(FILE)" --generate-notes --verify-tag
+	@if gh release view $(VERSION) >/dev/null 2>&1; then \
+		echo "Release $(VERSION) already exists. Uploading asset if missing... "; \
+		gh release upload $(VERSION) "./dist/$(FILE)" --clobber; \
+	else \
+		gh release create $(VERSION) "./dist/$(FILE)" --generate-notes --verify-tag; \
+	fi
 
 update-version:
 	VERSION=$(VERSION) node scripts/update-version.js
