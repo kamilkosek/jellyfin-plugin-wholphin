@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using Jellyfin.Plugin.Wholphin.Models;
 using MediaBrowser.Model.Plugins;
 
 namespace Jellyfin.Plugin.Wholphin.Configuration;
@@ -30,4 +31,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Gets or sets the Seerr URL.
     /// </summary>
     public string SeerrUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the home screen configuration.
+    /// </summary>
+    public HomeConfiguration HomeConfiguration { get; set; } = new()
+    {
+        Sections = Array.Empty<HomeSection>()
+    };
 }

@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.Json;
 using Jellyfin.Data.Enums;
 using Jellyfin.Plugin.Wholphin.Configuration;
+using Jellyfin.Plugin.Wholphin.Models;
 using MediaBrowser.Common.Api;
 using MediaBrowser.Controller.Dto;
 using MediaBrowser.Controller.Entities;
@@ -79,7 +82,8 @@ public class WholphinPluginController : ControllerBase
             features = new
             {
                 loginBackground = true,
-                settings = true
+                settings = true,
+                homeConfiguration = true
             }
         });
     }
@@ -99,5 +103,28 @@ public class WholphinPluginController : ControllerBase
         {
             seerrUrl = seerrUrl
         });
+    }
+
+    /// <summary>
+    /// Get home screen configuration.
+    /// </summary>
+    /// <returns>Home screen configuration with sections.</returns>
+    [HttpGet("home")]
+    [ProducesResponseType(typeof(HomeConfiguration), 200)]
+    [SuppressMessage(category: "Performance", checkId: "CA1869", Target = "Filters", Justification = "Wholphin requires camelCase serialization for the client.")]
+    public ActionResult GetHomeConfiguration()
+    {
+        var cfg = Plugin.Instance?.Configuration;
+        var homeConfig = cfg?.HomeConfiguration ?? new HomeConfiguration();
+
+        // Serialize with camelCase for the client
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
+
+        var json = JsonSerializer.Serialize(homeConfig, options);
+        return Content(json, "application/json");
     }
 }
