@@ -3,9 +3,6 @@
 <head>
     <meta charset="utf-8">
     <title>Wholphin</title>
-    <style>
-
-    </style>
 </head>
 <body>
     <div id="WholphinConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
@@ -37,6 +34,17 @@
                         <div class="fieldDescription">URL of the Seerr instance.</div>
                     </div>
 
+                    <div id="homeSectionsContainer" style="margin-top: 30px;">
+                        <h3 style="margin-bottom: 15px;">Home Screen Sections</h3>
+                        <div class="fieldDescription" style="margin-bottom: 15px;">
+                            Configure the sections that appear on the Android TV app home screen.
+                        </div>
+                        <div id="sectionsList" style="margin: 20px 0;"></div>
+                        <button type="button" is="emby-button" class="raised" id="addSectionBtn" style="margin-top: 10px;">
+                            <span>Add Section</span>
+                        </button>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
                             <span>Save</span>
@@ -45,10 +53,656 @@
                 </form>
             </div>
         </div>
+
+        <!-- Modal for editing sections -->
+        <div id="sectionModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: #202020; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h2 id="modalTitle">Edit Section</h2>
+                <form id="sectionForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="sectionId">Section ID</label>
+                        <input id="sectionId" type="text" is="emby-input" required />
+                        <div class="fieldDescription">Unique identifier for this section.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="sectionTitle">Title</label>
+                        <input id="sectionTitle" type="text" is="emby-input" required />
+                        <div class="fieldDescription">Display title shown to users.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="sectionType">Type</label>
+                        <select id="sectionType" is="emby-select" required>
+                            <option value="0">Resume (Continue Watching)</option>
+                            <option value="1">NextUp (Next Episodes)</option>
+                            <option value="2">Latest (Recently Added)</option>
+                            <option value="3">Items (Custom Query)</option>
+                            <option value="4">Custom (Plugin Endpoint)</option>
+                        </select>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="sectionLimit">Limit</label>
+                        <input id="sectionLimit" type="number" min="1" max="100" is="emby-input" required />
+                        <div class="fieldDescription">Maximum number of items to display.</div>
+                    </div>
+
+                    <div id="customEndpointContainer" style="display: none;">
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="sectionEndpoint">Custom Endpoint</label>
+                            <input id="sectionEndpoint" type="text" is="emby-input" />
+                            <div class="fieldDescription">Plugin endpoint path (e.g., /wholphin/trending).</div>
+                        </div>
+                    </div>
+
+                    <div id="queryContainer" style="display: none;">
+                        <h4>Query Parameters</h4>
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="queryParentId">Library ID</label>
+                            <input id="queryParentId" type="text" is="emby-input" placeholder="Click to select a library" />
+                            <div class="fieldDescription">Select a library or collection, or enter a UUID manually.</div>
+                            <div id="queryParentIdSuggestions" style="display: none; position: relative; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 8px; max-height: 250px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="queryFilters">Filters</label>
+                            <input id="queryFilters" type="text" is="emby-input" placeholder="Click to select filters" />
+                            <div class="fieldDescription">Click to select filters to apply to the query.</div>
+                            <div id="queryFiltersSuggestions" style="display: none; position: relative; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 8px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="queryItemTypes">Item Types</label>
+                            <input id="queryItemTypes" type="text" is="emby-input" placeholder="Click to select item types" />
+                            <div class="fieldDescription">Click to select item types to include.</div>
+                            <div id="queryItemTypesSuggestions" style="display: none; position: relative; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 8px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="querySortBy">Sort By</label>
+                            <input id="querySortBy" type="text" is="emby-input" placeholder="Click to select sort fields" />
+                            <div class="fieldDescription">Click to select sort fields.</div>
+                            <div id="querySortBySuggestions" style="display: none; position: relative; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 8px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="querySortOrder">Sort Order</label>
+                            <select id="querySortOrder" is="emby-select">
+                                <option value="">None</option>
+                                <option value="Ascending">Ascending</option>
+                                <option value="Descending">Descending</option>
+                            </select>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel inputLabelUnfocused" for="queryGenres">Genres</label>
+                            <input id="queryGenres" type="text" is="emby-input" placeholder="Action, Drama" />
+                            <div class="fieldDescription">Comma-separated genres to filter by.</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                        <button type="button" is="emby-button" class="raised" id="cancelSectionBtn">
+                            <span>Cancel</span>
+                        </button>
+                        <button type="submit" is="emby-button" class="raised button-submit">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <script type="text/javascript">
             var TemplateConfig = {
                 pluginUniqueId: 'f143773e-eb25-420f-8a30-f550347aa0a2'
             };
+
+            var homeSections = [];
+            var editingIndex = -1;
+            var librariesAndCollections = [];
+
+            var sectionTypeNames = {
+                0: 'Resume',
+                1: 'NextUp',
+                2: 'Latest',
+                3: 'Items',
+                4: 'Custom'
+            };
+
+            var sectionTypeValues = {
+                'Resume': 0,
+                'NextUp': 1,
+                'Latest': 2,
+                'Items': 3,
+                'Custom': 4
+            };
+
+            var availableFilters = [
+                'IsFolder',
+                'IsNotFolder',
+                'IsUnplayed',
+                'IsPlayed',
+                'IsFavorite',
+                'IsResumable',
+                'Likes',
+                'Dislikes',
+                'IsFavoriteOrLikes'
+            ];
+
+            var availableSortBy = [
+                'Default',
+                'AiredEpisodeOrder',
+                'Album',
+                'AlbumArtist',
+                'Artist',
+                'DateCreated',
+                'OfficialRating',
+                'DatePlayed',
+                'PremiereDate',
+                'StartDate',
+                'SortName',
+                'Name',
+                'Random',
+                'Runtime',
+                'CommunityRating',
+                'ProductionYear',
+                'PlayCount',
+                'CriticRating',
+                'IsFolder',
+                'IsUnplayed',
+                'IsPlayed',
+                'SeriesSortName',
+                'VideoBitRate',
+                'AirTime',
+                'Studio',
+                'IsFavoriteOrLiked',
+                'DateLastContentAdded',
+                'SeriesDatePlayed',
+                'ParentIndexNumber',
+                'IndexNumber'
+            ];
+
+            var availableItemTypes = [
+                'AggregateFolder',
+                'Audio',
+                'AudioBook',
+                'BasePluginFolder',
+                'Book',
+                'BoxSet',
+                'Channel',
+                'ChannelFolderItem',
+                'CollectionFolder',
+                'Episode',
+                'Folder',
+                'Genre',
+                'ManualPlaylistsFolder',
+                'Movie',
+                'LiveTvChannel',
+                'LiveTvProgram',
+                'MusicAlbum',
+                'MusicArtist',
+                'MusicGenre',
+                'MusicVideo',
+                'Person',
+                'Photo',
+                'PhotoAlbum',
+                'Playlist',
+                'PlaylistsFolder',
+                'Program',
+                'Recording',
+                'Season',
+                'Series',
+                'Studio',
+                'Trailer',
+                'TvChannel',
+                'TvProgram',
+                'UserRootFolder',
+                'UserView',
+                'Video',
+                'Year'
+            ];
+
+            function showFilterSuggestions(inputId, suggestionsId, availableOptions) {
+                var input = document.querySelector(inputId);
+                var suggestionsContainer = document.querySelector(suggestionsId);
+
+                var currentValue = input.value || '';
+                var selectedFilters = currentValue.split(',').map(function(f) { return f.trim(); }).filter(function(f) { return f.length > 0; });
+
+                // Find filters that are not yet selected
+                var availableFilters = availableOptions.filter(function(option) {
+                    return selectedFilters.indexOf(option) === -1;
+                });
+
+                if (availableFilters.length === 0) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                suggestionsContainer.innerHTML = '';
+                var listStyle = 'display: flex; flex-direction: column; gap: 4px;';
+                var list = document.createElement('div');
+                list.style.cssText = listStyle;
+
+                availableFilters.forEach(function(filter) {
+                    var itemStyle = 'padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; cursor: pointer; transition: background 0.2s;';
+                    var item = document.createElement('div');
+                    item.style.cssText = itemStyle;
+                    item.textContent = filter;
+
+                    item.addEventListener('mouseenter', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.15)';
+                    });
+                    item.addEventListener('mouseleave', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.05)';
+                    });
+
+                    item.addEventListener('click', function() {
+                        var currentFilters = input.value ? input.value.split(',').map(function(f) { return f.trim(); }) : [];
+                        currentFilters.push(filter);
+                        input.value = currentFilters.join(', ');
+                        showFilterSuggestions(inputId, suggestionsId, availableOptions);
+                    });
+
+                    list.appendChild(item);
+                });
+
+                suggestionsContainer.appendChild(list);
+                suggestionsContainer.style.display = 'block';
+            }
+
+            function hideFilterSuggestions(suggestionsId) {
+                setTimeout(function() {
+                    document.querySelector(suggestionsId).style.display = 'none';
+                }, 200);
+            }
+
+            async function loadLibrariesAndCollections() {
+                try {
+                    var userId = await ApiClient.getCurrentUserId();
+
+                    // Fetch libraries (user views)
+                    var libsUrl = ApiClient.getUrl('Users/' + userId + '/Views');
+
+                    // Fetch collections (BoxSets)
+                    var collectionsUrl = ApiClient.getUrl('Users/' + userId + '/Items', {
+                        IncludeItemTypes: 'BoxSet',
+                        Recursive: true,
+                        SortBy: 'SortName',
+                        SortOrder: 'Ascending'
+                    });
+
+                    // Fetch in parallel
+                    var libsPromise = ApiClient.ajax({
+                        type: 'GET',
+                        url: libsUrl,
+                        dataType: 'json'
+                    });
+
+                    var collectionsPromise = ApiClient.ajax({
+                        type: 'GET',
+                        url: collectionsUrl,
+                        dataType: 'json'
+                    });
+
+                    var results = await Promise.all([libsPromise, collectionsPromise]);
+                    var libsJson = results[0] || { Items: [] };
+                    var colsJson = results[1] || { Items: [] };
+
+                    var libraries = Array.isArray(libsJson.Items) ? libsJson.Items : [];
+                    var collections = Array.isArray(colsJson.Items) ? colsJson.Items : [];
+
+                    // Combine and format
+                    librariesAndCollections = [];
+
+                    libraries.forEach(function(lib) {
+                        if (lib.Id && lib.Name) {
+                            librariesAndCollections.push({
+                                id: lib.Id,
+                                name: lib.Name,
+                                type: 'Library'
+                            });
+                        }
+                    });
+
+                    collections.forEach(function(col) {
+                        if (col.Id && col.Name) {
+                            librariesAndCollections.push({
+                                id: col.Id,
+                                name: col.Name,
+                                type: 'Collection'
+                            });
+                        }
+                    });
+
+                    console.log('Loaded libraries and collections:', librariesAndCollections);
+                } catch (e) {
+                    console.warn('Failed to load libraries and collections:', e);
+                    librariesAndCollections = [];
+                }
+            }
+
+            function showLibrarySuggestions() {
+                var input = document.querySelector('#queryParentId');
+                var suggestionsContainer = document.querySelector('#queryParentIdSuggestions');
+
+                var searchTerm = (input.value || '').toLowerCase();
+
+                // Filter libraries based on search term
+                var filtered = librariesAndCollections.filter(function(item) {
+                    return item.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                           item.id.toLowerCase().indexOf(searchTerm) !== -1;
+                });
+
+                if (filtered.length === 0) {
+                    suggestionsContainer.style.display = 'none';
+                    return;
+                }
+
+                suggestionsContainer.innerHTML = '';
+                var listStyle = 'display: flex; flex-direction: column; gap: 4px;';
+                var list = document.createElement('div');
+                list.style.cssText = listStyle;
+
+                filtered.forEach(function(item) {
+                    var itemStyle = 'padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; cursor: pointer; transition: background 0.2s;';
+                    var itemDiv = document.createElement('div');
+                    itemDiv.style.cssText = itemStyle;
+
+                    var nameStyle = 'font-weight: bold; margin-bottom: 2px;';
+                    var nameSpan = document.createElement('div');
+                    nameSpan.style.cssText = nameStyle;
+                    nameSpan.textContent = item.name + ' (' + item.type + ')';
+
+                    var idStyle = 'font-size: 0.85em; color: rgba(255, 255, 255, 0.6);';
+                    var idSpan = document.createElement('div');
+                    idSpan.style.cssText = idStyle;
+                    idSpan.textContent = item.id;
+
+                    itemDiv.appendChild(nameSpan);
+                    itemDiv.appendChild(idSpan);
+
+                    itemDiv.addEventListener('mouseenter', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.15)';
+                    });
+                    itemDiv.addEventListener('mouseleave', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.05)';
+                    });
+
+                    itemDiv.addEventListener('click', function() {
+                        input.value = item.id;
+                        suggestionsContainer.style.display = 'none';
+                    });
+
+                    list.appendChild(itemDiv);
+                });
+
+                suggestionsContainer.appendChild(list);
+                suggestionsContainer.style.display = 'block';
+            }
+
+            function renderSections() {
+                var container = document.querySelector('#sectionsList');
+                if (!homeSections || homeSections.length === 0) {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.5);">No sections configured. Click "Add Section" to create one.</p>';
+                    return;
+                }
+
+                container.innerHTML = homeSections.map(function(section, index) {
+                    return '<div style="border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 20px; margin-bottom: 15px; background: rgba(0, 0, 0, 0.2); display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div style="font-weight: bold; font-size: 1.3em;">' + (section.Title || 'Untitled Section') + '</div>' +
+                        '<div style="display: flex; gap: 8px; flex-shrink: 0;">' +
+                        '<button type="button" is="emby-button" class="raised" onclick="moveSection(' + index + ', -1)" ' + (index === 0 ? 'disabled' : '') + '>↑</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="moveSection(' + index + ', 1)" ' + (index === homeSections.length - 1 ? 'disabled' : '') + '>↓</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="editSection(' + index + ')">Edit</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="deleteSection(' + index + ')">Delete</button>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
+            function showSectionModal(index) {
+                console.log('showSectionModal called with index:', index);
+                editingIndex = index;
+                var modal = document.querySelector('#sectionModal');
+                var form = document.querySelector('#sectionForm');
+
+                if (index === -1) {
+                    console.log('Adding new section');
+                    document.querySelector('#modalTitle').textContent = 'Add Section';
+                    form.reset();
+                    document.querySelector('#sectionLimit').value = 20;
+                    document.querySelector('#sectionType').value = '0';
+                } else {
+                    console.log('Editing section at index:', index);
+                    document.querySelector('#modalTitle').textContent = 'Edit Section';
+                    var section = homeSections[index];
+                    console.log('Section data:', section);
+                    console.log('Section Type:', section.Type, 'Type as string:', section.Type.toString());
+
+                    document.querySelector('#sectionId').value = section.Id || '';
+                    document.querySelector('#sectionTitle').value = section.Title || '';
+
+                    // Convert type to number if it's a string
+                    var typeValue = section.Type;
+                    if (typeof typeValue === 'string') {
+                        typeValue = sectionTypeValues[typeValue] !== undefined ? sectionTypeValues[typeValue] : 0;
+                        console.log('Type was string, converted to:', typeValue);
+                    }
+
+                    // Set the type value with a small delay to ensure emby-select is ready
+                    var typeSelect = document.querySelector('#sectionType');
+                    console.log('Type select element:', typeSelect);
+                    console.log('Setting type value to:', typeValue.toString());
+                    typeSelect.value = typeValue.toString();
+                    console.log('Type select value after setting:', typeSelect.value);
+
+                    // Trigger change event to ensure the select is properly updated
+                    setTimeout(function() {
+                        console.log('In setTimeout - setting type value again to:', typeValue.toString());
+                        typeSelect.value = typeValue.toString();
+                        console.log('Type select value after setTimeout:', typeSelect.value);
+                        var event = new Event('change', { bubbles: true });
+                        typeSelect.dispatchEvent(event);
+                        console.log('Change event dispatched');
+                    }, 10);
+
+                    document.querySelector('#sectionLimit').value = section.Limit || 20;
+                    document.querySelector('#sectionEndpoint').value = section.Endpoint || '';
+
+                    if (section.Query) {
+                        console.log('Section has query:', section.Query);
+                        document.querySelector('#queryParentId').value = section.Query.ParentId || '';
+                        document.querySelector('#queryFilters').value = section.Query.Filters ? section.Query.Filters.join(', ') : '';
+                        document.querySelector('#queryItemTypes').value = section.Query.IncludeItemTypes ? section.Query.IncludeItemTypes.join(', ') : '';
+                        document.querySelector('#querySortBy').value = section.Query.SortBy ? section.Query.SortBy.join(', ') : '';
+                        document.querySelector('#querySortOrder').value = section.Query.SortOrder || '';
+                        document.querySelector('#queryGenres').value = section.Query.Genres ? section.Query.Genres.join(', ') : '';
+                    } else {
+                        console.log('Section has no query');
+                    }
+                }
+
+                modal.style.display = 'flex';
+                console.log('Modal displayed, calling updateModalFields');
+                updateModalFields();
+            }
+
+            function updateModalFields() {
+                var typeSelect = document.querySelector('#sectionType');
+                var type = parseInt(typeSelect.value);
+                console.log('updateModalFields called, type value:', typeSelect.value, 'parsed as int:', type);
+
+                var customContainer = document.querySelector('#customEndpointContainer');
+                var queryContainer = document.querySelector('#queryContainer');
+
+                var showCustom = type === 4;
+                var showQuery = type === 3;
+                console.log('Should show custom container (type 4):', showCustom);
+                console.log('Should show query container (type 3):', showQuery);
+
+                customContainer.style.display = showCustom ? 'block' : 'none';
+                queryContainer.style.display = showQuery ? 'block' : 'none';
+
+                console.log('Custom container display:', customContainer.style.display);
+                console.log('Query container display:', queryContainer.style.display);
+            }
+
+            function editSection(index) {
+                showSectionModal(index);
+            }
+
+            function deleteSection(index) {
+                if (confirm('Are you sure you want to delete this section?')) {
+                    homeSections.splice(index, 1);
+                    renderSections();
+                }
+            }
+
+            function moveSection(index, direction) {
+                var newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= homeSections.length) return;
+
+                var temp = homeSections[index];
+                homeSections[index] = homeSections[newIndex];
+                homeSections[newIndex] = temp;
+                renderSections();
+            }
+
+            function splitString(str) {
+                if (!str || str.trim() === '') return null;
+                return str.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+            }
+
+            document.querySelector('#addSectionBtn').addEventListener('click', function() {
+                showSectionModal(-1);
+            });
+
+            document.querySelector('#cancelSectionBtn').addEventListener('click', function() {
+                document.querySelector('#sectionModal').style.display = 'none';
+            });
+
+            // Setup filter suggestions
+            document.querySelector('#queryFilters').addEventListener('focus', function() {
+                showFilterSuggestions('#queryFilters', '#queryFiltersSuggestions', availableFilters);
+            });
+
+            document.querySelector('#queryFilters').addEventListener('blur', function() {
+                hideFilterSuggestions('#queryFiltersSuggestions');
+            });
+
+            document.querySelector('#queryFilters').addEventListener('input', function() {
+                showFilterSuggestions('#queryFilters', '#queryFiltersSuggestions', availableFilters);
+            });
+
+            // Setup item types suggestions
+            document.querySelector('#queryItemTypes').addEventListener('focus', function() {
+                showFilterSuggestions('#queryItemTypes', '#queryItemTypesSuggestions', availableItemTypes);
+            });
+
+            document.querySelector('#queryItemTypes').addEventListener('blur', function() {
+                hideFilterSuggestions('#queryItemTypesSuggestions');
+            });
+
+            document.querySelector('#queryItemTypes').addEventListener('input', function() {
+                showFilterSuggestions('#queryItemTypes', '#queryItemTypesSuggestions', availableItemTypes);
+            });
+
+            // Setup sort by suggestions
+            document.querySelector('#querySortBy').addEventListener('focus', function() {
+                showFilterSuggestions('#querySortBy', '#querySortBySuggestions', availableSortBy);
+            });
+
+            document.querySelector('#querySortBy').addEventListener('blur', function() {
+                hideFilterSuggestions('#querySortBySuggestions');
+            });
+
+            document.querySelector('#querySortBy').addEventListener('input', function() {
+                showFilterSuggestions('#querySortBy', '#querySortBySuggestions', availableSortBy);
+            });
+
+            // Setup library suggestions
+            document.querySelector('#queryParentId').addEventListener('focus', async function() {
+                if (librariesAndCollections.length === 0) {
+                    await loadLibrariesAndCollections();
+                }
+                showLibrarySuggestions();
+            });
+
+            document.querySelector('#queryParentId').addEventListener('blur', function() {
+                hideFilterSuggestions('#queryParentIdSuggestions');
+            });
+
+            document.querySelector('#queryParentId').addEventListener('input', function() {
+                if (librariesAndCollections.length > 0) {
+                    showLibrarySuggestions();
+                }
+            });
+
+            // Initialize checkbox groups when type changes to "Items"
+            document.querySelector('#sectionType').addEventListener('change', function() {
+                var type = parseInt(this.value);
+                if (type === 3) {
+                    // Make sure suggestions are hidden initially
+                    document.querySelector('#queryFiltersSuggestions').style.display = 'none';
+                    document.querySelector('#queryItemTypesSuggestions').style.display = 'none';
+                    document.querySelector('#querySortBySuggestions').style.display = 'none';
+                    document.querySelector('#queryParentIdSuggestions').style.display = 'none';
+
+                    // Preload libraries when switching to Items type
+                    if (librariesAndCollections.length === 0) {
+                        loadLibrariesAndCollections();
+                    }
+                }
+                updateModalFields();
+            });
+
+            document.querySelector('#sectionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                var section = {
+                    Id: document.querySelector('#sectionId').value,
+                    Title: document.querySelector('#sectionTitle').value,
+                    Type: parseInt(document.querySelector('#sectionType').value),
+                    Limit: parseInt(document.querySelector('#sectionLimit').value)
+                };
+
+                if (section.Type === 4) {
+                    section.Endpoint = document.querySelector('#sectionEndpoint').value || null;
+                }
+
+                if (section.Type === 3) {
+                    var query = {};
+                    var parentId = document.querySelector('#queryParentId').value;
+                    var filters = splitString(document.querySelector('#queryFilters').value);
+                    var itemTypes = splitString(document.querySelector('#queryItemTypes').value);
+                    var sortBy = splitString(document.querySelector('#querySortBy').value);
+                    var sortOrder = document.querySelector('#querySortOrder').value;
+                    var genres = splitString(document.querySelector('#queryGenres').value);
+
+                    if (parentId) query.ParentId = parentId;
+                    if (filters) query.Filters = filters;
+                    if (itemTypes) query.IncludeItemTypes = itemTypes;
+                    if (sortBy) query.SortBy = sortBy;
+                    if (sortOrder) query.SortOrder = sortOrder;
+                    if (genres) query.Genres = genres;
+
+                    if (Object.keys(query).length > 0) {
+                        section.Query = query;
+                    }
+                }
+
+                if (editingIndex === -1) {
+                    homeSections.push(section);
+                } else {
+                    homeSections[editingIndex] = section;
+                }
+
+                document.querySelector('#sectionModal').style.display = 'none';
+                renderSections();
+            });
 
             document.querySelector('#WholphinConfigPage')
                 .addEventListener('pageshow', function() {
@@ -59,6 +713,9 @@
                         document.querySelector('#LoginBackgroundAlpha').value = config.LoginBackgroundAlpha ?? 0.2;
                         document.querySelector('#LoginBackgroundBlur').value = config.LoginBackgroundBlur ?? 1.0;
                         document.querySelector('#SeerrUrl').value = config.SeerrUrl || '';
+
+                        homeSections = config.HomeConfiguration && config.HomeConfiguration.Sections ? config.HomeConfiguration.Sections : [];
+                        renderSections();
 
                         Dashboard.hideLoadingMsg();
                     });
@@ -75,6 +732,10 @@
                     config.LoginBackgroundBlur = parseFloat(document.querySelector('#LoginBackgroundBlur').value) || 1.0;
                     config.SeerrUrl = document.querySelector('#SeerrUrl').value || '';
 
+                    config.HomeConfiguration = {
+                        Sections: homeSections
+                    };
+
                     ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                     });
@@ -84,9 +745,7 @@
             });
 
 
-            // Also bind after DOMContentLoaded and after pageshow in case Jellyfin reuses the DOM
-            document.addEventListener('DOMContentLoaded', bindProviderButtons);
-            document.querySelector('#WholphinConfigPage').addEventListener('pageshow', bindProviderButtons);
+
         </script>
     </div>
 </body>
