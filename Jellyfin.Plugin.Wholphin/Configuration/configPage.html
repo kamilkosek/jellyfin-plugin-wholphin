@@ -45,8 +45,79 @@
                         </button>
                     </div>
 
+                    <div id="navDrawerContainer" style="margin-top: 30px;">
+                        <h3 style="margin-bottom: 15px;">Navigation Drawer Items</h3>
+                        <div class="fieldDescription" style="margin-bottom: 15px;">
+                            Configure the items that appear in the Android TV app navigation drawer.
+                        </div>
+                        <div id="navDrawerList" style="margin: 20px 0;"></div>
+                        <button type="button" is="emby-button" class="raised" id="addNavDrawerItemBtn" style="margin-top: 10px;">
+                            <span>Add Item</span>
+                        </button>
+                    </div>
+
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal for editing nav drawer items -->
+        <div id="navDrawerModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: #202020; border-radius: 8px; padding: 20px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h2 id="navDrawerModalTitle">Edit Nav Drawer Item</h2>
+                <form id="navDrawerForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemType">Type</label>
+                        <select id="navItemType" is="emby-select" required>
+                            <option value="library">Library</option>
+                            <option value="collection">Collection</option>
+                            <option value="playlist">Playlist</option>
+                        </select>
+                        <div class="fieldDescription">Select the type of item first.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemId">Item ID</label>
+                        <input id="navItemId" type="text" is="emby-input" placeholder="Click to select a library or collection" required />
+                        <div class="fieldDescription">Select a library, collection, or playlist ID.</div>
+                        <div id="navItemIdSuggestions" style="display: none; position: relative; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; padding: 8px; max-height: 250px; overflow-y: auto;"></div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemName">Display Name (Optional)</label>
+                        <input id="navItemName" type="text" is="emby-input" />
+                        <div class="fieldDescription">Override display name. Leave empty to use default name.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemOrder">Order</label>
+                        <input id="navItemOrder" type="number" min="0" is="emby-input" required />
+                        <div class="fieldDescription">Display order in the navigation drawer.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemVisible">
+                            <input type="checkbox" id="navItemVisible" is="emby-checkbox" />
+                            <span>Visible</span>
+                        </label>
+                        <div class="fieldDescription">Whether the item is visible in the navigation drawer.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="navItemImageUrl">Custom Icon URL (Optional)</label>
+                        <input id="navItemImageUrl" type="text" is="emby-input" placeholder="/Items/xyz-789/Images/Primary" />
+                        <div class="fieldDescription">Optional custom icon URL for the item.</div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                        <button type="button" is="emby-button" class="raised" id="cancelNavDrawerBtn">
+                            <span>Cancel</span>
+                        </button>
+                        <button type="submit" is="emby-button" class="raised button-submit">
                             <span>Save</span>
                         </button>
                     </div>
@@ -160,7 +231,9 @@
             };
 
             var homeSections = [];
+            var navDrawerItems = [];
             var editingIndex = -1;
+            var editingNavDrawerIndex = -1;
             var librariesAndCollections = [];
 
             var sectionTypeNames = {
@@ -334,6 +407,14 @@
                         SortOrder: 'Ascending'
                     });
 
+                    // Fetch playlists
+                    var playlistsUrl = ApiClient.getUrl('Users/' + userId + '/Items', {
+                        IncludeItemTypes: 'Playlist',
+                        Recursive: true,
+                        SortBy: 'SortName',
+                        SortOrder: 'Ascending'
+                    });
+
                     // Fetch in parallel
                     var libsPromise = ApiClient.ajax({
                         type: 'GET',
@@ -347,12 +428,20 @@
                         dataType: 'json'
                     });
 
-                    var results = await Promise.all([libsPromise, collectionsPromise]);
+                    var playlistsPromise = ApiClient.ajax({
+                        type: 'GET',
+                        url: playlistsUrl,
+                        dataType: 'json'
+                    });
+
+                    var results = await Promise.all([libsPromise, collectionsPromise, playlistsPromise]);
                     var libsJson = results[0] || { Items: [] };
                     var colsJson = results[1] || { Items: [] };
+                    var playlistsJson = results[2] || { Items: [] };
 
                     var libraries = Array.isArray(libsJson.Items) ? libsJson.Items : [];
                     var collections = Array.isArray(colsJson.Items) ? colsJson.Items : [];
+                    var playlists = Array.isArray(playlistsJson.Items) ? playlistsJson.Items : [];
 
                     // Combine and format
                     librariesAndCollections = [];
@@ -362,7 +451,7 @@
                             librariesAndCollections.push({
                                 id: lib.Id,
                                 name: lib.Name,
-                                type: 'Library'
+                                type: 'library'
                             });
                         }
                     });
@@ -372,14 +461,24 @@
                             librariesAndCollections.push({
                                 id: col.Id,
                                 name: col.Name,
-                                type: 'Collection'
+                                type: 'collection'
                             });
                         }
                     });
 
-                    console.log('Loaded libraries and collections:', librariesAndCollections);
+                    playlists.forEach(function(pl) {
+                        if (pl.Id && pl.Name) {
+                            librariesAndCollections.push({
+                                id: pl.Id,
+                                name: pl.Name,
+                                type: 'playlist'
+                            });
+                        }
+                    });
+
+                    console.log('Loaded libraries, collections and playlists:', librariesAndCollections);
                 } catch (e) {
-                    console.warn('Failed to load libraries and collections:', e);
+                    console.warn('Failed to load libraries, collections and playlists:', e);
                     librariesAndCollections = [];
                 }
             }
@@ -458,6 +557,31 @@
                         '<button type="button" is="emby-button" class="raised" onclick="moveSection(' + index + ', 1)" ' + (index === homeSections.length - 1 ? 'disabled' : '') + '>↓</button>' +
                         '<button type="button" is="emby-button" class="raised" onclick="editSection(' + index + ')">Edit</button>' +
                         '<button type="button" is="emby-button" class="raised" onclick="deleteSection(' + index + ')">Delete</button>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
+            function renderNavDrawerItems() {
+                var container = document.querySelector('#navDrawerList');
+                if (!navDrawerItems || navDrawerItems.length === 0) {
+                    container.innerHTML = '<p style="color: rgba(255,255,255,0.5);">No navigation drawer items configured. Click "Add Item" to create one.</p>';
+                    return;
+                }
+
+                container.innerHTML = navDrawerItems.map(function(item, index) {
+                    var displayName = item.Name || item.Id;
+                    var visibilityBadge = item.Visible ? '<span style="background: green; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 8px;">Visible</span>' : '<span style="background: gray; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-left: 8px;">Hidden</span>';
+                    return '<div style="border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 8px; padding: 20px; margin-bottom: 15px; background: rgba(0, 0, 0, 0.2); display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                        '<div style="font-weight: bold; font-size: 1.3em;">' + displayName + visibilityBadge + '</div>' +
+                        '<div style="color: rgba(255, 255, 255, 0.6); font-size: 0.9em; margin-top: 4px;">Type: ' + item.Type + ' | Order: ' + item.Order + '</div>' +
+                        '</div>' +
+                        '<div style="display: flex; gap: 8px; flex-shrink: 0;">' +
+                        '<button type="button" is="emby-button" class="raised" onclick="moveNavDrawerItem(' + index + ', -1)" ' + (index === 0 ? 'disabled' : '') + '>↑</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="moveNavDrawerItem(' + index + ', 1)" ' + (index === navDrawerItems.length - 1 ? 'disabled' : '') + '>↓</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="editNavDrawerItem(' + index + ')">Edit</button>' +
+                        '<button type="button" is="emby-button" class="raised" onclick="deleteNavDrawerItem(' + index + ')">Delete</button>' +
                         '</div>' +
                         '</div>';
                 }).join('');
@@ -550,6 +674,238 @@
                 console.log('Query container display:', queryContainer.style.display);
             }
 
+            function showNavDrawerModal(index) {
+                console.log('showNavDrawerModal called with index:', index);
+                editingNavDrawerIndex = index;
+                var modal = document.querySelector('#navDrawerModal');
+                var form = document.querySelector('#navDrawerForm');
+
+                if (index === -1) {
+                    console.log('Adding new nav drawer item');
+                    document.querySelector('#navDrawerModalTitle').textContent = 'Add Nav Drawer Item';
+                    form.reset();
+                    document.querySelector('#navItemOrder').value = navDrawerItems.length;
+                    document.querySelector('#navItemType').value = 'library';
+                    document.querySelector('#navItemVisible').checked = true;
+                    document.querySelector('#navItemId').disabled = true;
+                    document.querySelector('#navItemId').placeholder = 'First select a type above';
+                    console.log('Nav drawer item form initialized for new item');
+
+                    // Load items when opening modal for new item
+                    console.log('Pre-loading items for modal');
+                    if (librariesAndCollections.length === 0) {
+                        loadLibrariesAndCollections().then(function() {
+                            console.log('Items loaded, enabling ID field');
+                            document.querySelector('#navItemId').disabled = false;
+                            document.querySelector('#navItemId').placeholder = 'Click to select a library';
+                        }).catch(function(error) {
+                            console.error('Failed to load items:', error);
+                        });
+                    } else {
+                        console.log('Items already loaded, enabling ID field');
+                        document.querySelector('#navItemId').disabled = false;
+                        document.querySelector('#navItemId').placeholder = 'Click to select a library';
+                    }
+                } else {
+                    console.log('Editing nav drawer item at index:', index);
+                    document.querySelector('#navDrawerModalTitle').textContent = 'Edit Nav Drawer Item';
+                    var item = navDrawerItems[index];
+                    console.log('Item data:', item);
+                    document.querySelector('#navItemType').value = item.Type || 'library';
+                    document.querySelector('#navItemId').value = item.Id || '';
+                    document.querySelector('#navItemId').disabled = false;
+                    document.querySelector('#navItemName').value = item.Name || '';
+                    document.querySelector('#navItemOrder').value = item.Order || 0;
+                    document.querySelector('#navItemVisible').checked = item.Visible !== false;
+                    document.querySelector('#navItemImageUrl').value = item.ImageUrl || '';
+                    console.log('Nav drawer item form initialized for editing');
+                }
+
+                modal.style.display = 'flex';
+                console.log('Nav drawer modal displayed');
+            }
+
+            function editNavDrawerItem(index) {
+                showNavDrawerModal(index);
+            }
+
+            function deleteNavDrawerItem(index) {
+                if (confirm('Are you sure you want to delete this navigation drawer item?')) {
+                    navDrawerItems.splice(index, 1);
+                    renderNavDrawerItems();
+                }
+            }
+
+            function moveNavDrawerItem(index, direction) {
+                var newIndex = index + direction;
+                if (newIndex < 0 || newIndex >= navDrawerItems.length) return;
+
+                var temp = navDrawerItems[index];
+                navDrawerItems[index] = navDrawerItems[newIndex];
+                navDrawerItems[newIndex] = temp;
+                renderNavDrawerItems();
+            }
+
+            document.querySelector('#addNavDrawerItemBtn').addEventListener('click', function() {
+                showNavDrawerModal(-1);
+            });
+
+            document.querySelector('#cancelNavDrawerBtn').addEventListener('click', function() {
+                document.querySelector('#navDrawerModal').style.display = 'none';
+            });
+
+            // Enable/disable ID input based on type selection
+            document.querySelector('#navItemType').addEventListener('change', async function() {
+                console.log('navItemType changed to:', this.value);
+                var idInput = document.querySelector('#navItemId');
+                console.log('Enabling ID input field');
+                idInput.disabled = false;
+                idInput.placeholder = 'Click to select a ' + this.value;
+                idInput.value = '';
+                document.querySelector('#navItemName').value = '';
+
+                // Load items if not already loaded
+                if (librariesAndCollections.length === 0) {
+                    console.log('Loading libraries, collections and playlists...');
+                    await loadLibrariesAndCollections();
+                    console.log('Loaded', librariesAndCollections.length, 'items');
+                } else {
+                    console.log('Already have', librariesAndCollections.length, 'items loaded');
+                }
+            });
+
+            // Setup nav item ID suggestions
+            document.querySelector('#navItemId').addEventListener('focus', async function() {
+                console.log('navItemId focused, disabled:', this.disabled);
+                if (this.disabled) {
+                    console.log('Field is disabled, ignoring focus');
+                    return;
+                }
+
+                if (librariesAndCollections.length === 0) {
+                    console.log('Loading items on focus...');
+                    await loadLibrariesAndCollections();
+                }
+                console.log('Calling showNavItemIdSuggestions');
+                showNavItemIdSuggestions();
+            });
+
+            document.querySelector('#navItemId').addEventListener('blur', function() {
+                console.log('navItemId blurred');
+                hideFilterSuggestions('#navItemIdSuggestions');
+            });
+
+            document.querySelector('#navItemId').addEventListener('input', function() {
+                console.log('navItemId input changed');
+                if (this.disabled) {
+                    console.log('Field is disabled, ignoring input');
+                    return;
+                }
+
+                if (librariesAndCollections.length > 0) {
+                    showNavItemIdSuggestions();
+                }
+            });
+
+            function showNavItemIdSuggestions() {
+                console.log('showNavItemIdSuggestions called');
+                var input = document.querySelector('#navItemId');
+                if (!input) {
+                    console.error('ERROR: navItemId input element not found!');
+                    return;
+                }
+                console.log('input element found:', input);
+
+                var suggestionsContainer = document.querySelector('#navItemIdSuggestions');
+                if (!suggestionsContainer) {
+                    console.error('ERROR: navItemIdSuggestions container not found!');
+                    return;
+                }
+                console.log('suggestions container found:', suggestionsContainer);
+
+                var selectedType = document.querySelector('#navItemType').value;
+                console.log('Selected type:', selectedType);
+
+                var searchTerm = (input.value || '').toLowerCase();
+                console.log('Search term:', searchTerm);
+
+                // Filter by selected type first, then by search term
+                var filtered = librariesAndCollections.filter(function(item) {
+                    var matchesType = item.type === selectedType;
+                    var matchesSearch = item.name.toLowerCase().indexOf(searchTerm) !== -1 ||
+                                       item.id.toLowerCase().indexOf(searchTerm) !== -1;
+                    return matchesType && matchesSearch;
+                });
+                console.log('Filtered items count:', filtered.length);
+
+                if (filtered.length === 0) {
+                    suggestionsContainer.innerHTML = '<div style="padding: 8px 12px; color: rgba(255, 255, 255, 0.5);">No ' + selectedType + 's found</div>';
+                    suggestionsContainer.style.display = 'block';
+                    return;
+                }
+
+                suggestionsContainer.innerHTML = '';
+                var listStyle = 'display: flex; flex-direction: column; gap: 4px;';
+                var list = document.createElement('div');
+                list.style.cssText = listStyle;
+
+                filtered.forEach(function(item) {
+                    var itemStyle = 'padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; cursor: pointer; transition: background 0.2s;';
+                    var itemDiv = document.createElement('div');
+                    itemDiv.style.cssText = itemStyle;
+
+                    var nameStyle = 'font-weight: bold; margin-bottom: 2px;';
+                    var nameSpan = document.createElement('div');
+                    nameSpan.style.cssText = nameStyle;
+                    nameSpan.textContent = item.name;
+
+                    var idStyle = 'font-size: 0.85em; color: rgba(255, 255, 255, 0.6);';
+                    var idSpan = document.createElement('div');
+                    idSpan.style.cssText = idStyle;
+                    idSpan.textContent = item.id;
+
+                    itemDiv.appendChild(nameSpan);
+                    itemDiv.appendChild(idSpan);
+
+                    itemDiv.addEventListener('mouseenter', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.15)';
+                    });
+                    itemDiv.addEventListener('mouseleave', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.05)';
+                    });
+
+                    itemDiv.addEventListener('click', function() {
+                        input.value = item.id;
+                        document.querySelector('#navItemName').value = item.name;
+                    });
+                    var idSpan = document.createElement('div');
+                    idSpan.style.cssText = idStyle;
+                    idSpan.textContent = item.id;
+
+                    itemDiv.appendChild(nameSpan);
+                    itemDiv.appendChild(idSpan);
+
+                    itemDiv.addEventListener('mouseenter', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.15)';
+                    });
+                    itemDiv.addEventListener('mouseleave', function() {
+                        this.style.background = 'rgba(255, 255, 255, 0.05)';
+                    });
+
+                    itemDiv.addEventListener('click', function() {
+                        input.value = item.id;
+                        document.querySelector('#navItemName').value = item.name;
+                        document.querySelector('#navItemType').value = item.type.toLowerCase();
+                        suggestionsContainer.style.display = 'none';
+                    });
+
+                    list.appendChild(itemDiv);
+                });
+
+                suggestionsContainer.appendChild(list);
+                suggestionsContainer.style.display = 'block';
+            };
+
             function editSection(index) {
                 showSectionModal(index);
             }
@@ -571,6 +927,32 @@
                 renderSections();
             }
 
+
+            document.querySelector('#navDrawerForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                var item = {
+                    Id: document.querySelector('#navItemId').value,
+                    Type: document.querySelector('#navItemType').value,
+                    Order: parseInt(document.querySelector('#navItemOrder').value),
+                    Visible: document.querySelector('#navItemVisible').checked
+                };
+
+                var name = document.querySelector('#navItemName').value;
+                var imageUrl = document.querySelector('#navItemImageUrl').value;
+
+                if (name) item.Name = name;
+                if (imageUrl) item.ImageUrl = imageUrl;
+
+                if (editingNavDrawerIndex === -1) {
+                    navDrawerItems.push(item);
+                } else {
+                    navDrawerItems[editingNavDrawerIndex] = item;
+                }
+
+                document.querySelector('#navDrawerModal').style.display = 'none';
+                renderNavDrawerItems();
+            });
             function splitString(str) {
                 if (!str || str.trim() === '') return null;
                 return str.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
@@ -717,6 +1099,9 @@
                         homeSections = config.HomeConfiguration && config.HomeConfiguration.Sections ? config.HomeConfiguration.Sections : [];
                         renderSections();
 
+                        navDrawerItems = config.NavDrawerConfiguration && config.NavDrawerConfiguration.Items ? config.NavDrawerConfiguration.Items : [];
+                        renderNavDrawerItems();
+
                         Dashboard.hideLoadingMsg();
                     });
                 });
@@ -734,6 +1119,10 @@
 
                     config.HomeConfiguration = {
                         Sections: homeSections
+                    };
+
+                    config.NavDrawerConfiguration = {
+                        Items: navDrawerItems
                     };
 
                     ApiClient.updatePluginConfiguration(TemplateConfig.pluginUniqueId, config).then(function (result) {

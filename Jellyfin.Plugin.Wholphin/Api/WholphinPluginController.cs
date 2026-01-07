@@ -127,4 +127,27 @@ public class WholphinPluginController : ControllerBase
         var json = JsonSerializer.Serialize(homeConfig, options);
         return Content(json, "application/json");
     }
+
+    /// <summary>
+    /// Get navigation drawer configuration.
+    /// </summary>
+    /// <returns>Navigation drawer configuration with items.</returns>
+    [HttpGet("navdrawer")]
+    [ProducesResponseType(typeof(NavDrawerConfiguration), 200)]
+    [SuppressMessage(category: "Performance", checkId: "CA1869", Target = "Filters", Justification = "Wholphin requires camelCase serialization for the client.")]
+    public ActionResult GetNavDrawerConfiguration()
+    {
+        var cfg = Plugin.Instance?.Configuration;
+        var navDrawerConfig = cfg?.NavDrawerConfiguration ?? new NavDrawerConfiguration();
+
+        // Serialize with camelCase for the client
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false
+        };
+
+        var json = JsonSerializer.Serialize(navDrawerConfig, options);
+        return Content(json, "application/json");
+    }
 }

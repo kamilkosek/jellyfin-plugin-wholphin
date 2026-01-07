@@ -39,4 +39,12 @@ public class PluginConfiguration : BasePluginConfiguration
     {
         Sections = Array.Empty<HomeSection>()
     };
+
+    /// <summary>
+    /// Gets or sets the navigation drawer configuration.
+    /// </summary>
+    public NavDrawerConfiguration NavDrawerConfiguration { get; set; } = new()
+    {
+        Items = Array.Empty<NavDrawerItem>()
+    };
 }
