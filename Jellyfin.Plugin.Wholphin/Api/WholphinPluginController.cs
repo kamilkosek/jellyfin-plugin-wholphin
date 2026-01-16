@@ -62,31 +62,6 @@ public class WholphinPluginController : ControllerBase
     }
 
     /// <summary>
-    /// Get plugin capabilities.
-    /// </summary>
-    /// <returns>Plugin version and supported features.</returns>
-    [AllowAnonymous]
-    [HttpGet("capabilities")]
-    [ProducesResponseType(200)]
-    public ActionResult GetCapabilities()
-    {
-        var version = Plugin.Instance?.Version?.ToString() ?? "0.0.0";
-
-        return Ok(new
-        {
-            version = version,
-            features = new
-            {
-                loginBackground = true,
-                settings = true,
-                homeConfiguration = true,
-                navDrawerConfiguration = true,
-                themeColors = true
-            }
-        });
-    }
-
-    /// <summary>
     /// Get plugin settings.
     /// </summary>
     /// <returns>Plugin settings.</returns>
