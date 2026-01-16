@@ -33,6 +33,11 @@ public class PluginConfiguration : BasePluginConfiguration
     public string SeerrUrl { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the theme color.
+    /// </summary>
+    public Lockable<AppThemeColors> ThemeColor { get; set; } = new() { Value = AppThemeColors.PURPLE };
+
+    /// <summary>
     /// Gets or sets the home screen configuration.
     /// </summary>
     public HomeConfiguration HomeConfiguration { get; set; } = new()

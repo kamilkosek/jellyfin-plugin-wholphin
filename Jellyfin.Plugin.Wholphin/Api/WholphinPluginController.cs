@@ -52,16 +52,12 @@ public class WholphinPluginController : ControllerBase
     public ActionResult GetLoginBackground()
     {
         var cfg = Plugin.Instance?.Configuration;
-        // get the background image URL from configuration
-        var backgroundimageurl = cfg?.LoginBackgroundImageUrl ?? string.Empty;
-        var alpha = cfg?.LoginBackgroundAlpha ?? 0.2f;
-        var blur = cfg?.LoginBackgroundBlur ?? 1.0f;
 
         return Ok(new
         {
-            backgroundUrl = backgroundimageurl,
-            alpha = alpha,
-            blur = blur
+            backgroundUrl = cfg?.LoginBackgroundImageUrl ?? string.Empty,
+            alpha = cfg?.LoginBackgroundAlpha ?? 0.2f,
+            blur = cfg?.LoginBackgroundBlur ?? 1.0f
         });
     }
 
@@ -83,7 +79,9 @@ public class WholphinPluginController : ControllerBase
             {
                 loginBackground = true,
                 settings = true,
-                homeConfiguration = true
+                homeConfiguration = true,
+                navDrawerConfiguration = true,
+                themeColors = true
             }
         });
     }
@@ -97,11 +95,15 @@ public class WholphinPluginController : ControllerBase
     public ActionResult GetSettings()
     {
         var cfg = Plugin.Instance?.Configuration;
-        var seerrUrl = cfg?.SeerrUrl ?? string.Empty;
 
         return Ok(new
         {
-            seerrUrl = seerrUrl
+            seerrUrl = cfg?.SeerrUrl ?? string.Empty,
+            themeColor = new
+            {
+                value = cfg?.ThemeColor?.Value ?? AppThemeColors.PURPLE,
+                locked = cfg?.ThemeColor?.Locked ?? false
+            }
         });
     }
 
