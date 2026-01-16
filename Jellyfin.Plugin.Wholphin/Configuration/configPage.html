@@ -8,11 +8,52 @@
     <div id="WholphinConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-select,emby-checkbox">
         <div data-role="content">
             <div class="content-primary">
+                <style>
+                    .wholphin-tabs {
+                        display: flex;
+                        gap: 0;
+                        margin-bottom: 30px;
+                        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+                    }
+                    .wholphin-tab {
+                        padding: 12px 24px;
+                        cursor: pointer;
+                        background: transparent;
+                        border: none;
+                        color: rgba(255, 255, 255, 0.6);
+                        font-size: 16px;
+                        transition: all 0.3s;
+                        border-bottom: 3px solid transparent;
+                        margin-bottom: -2px;
+                    }
+                    .wholphin-tab:hover {
+                        color: rgba(255, 255, 255, 0.9);
+                        background: rgba(255, 255, 255, 0.05);
+                    }
+                    .wholphin-tab.active {
+                        color: #00a4dc;
+                        border-bottom-color: #00a4dc;
+                    }
+                    .wholphin-tab-content {
+                        display: none;
+                    }
+                    .wholphin-tab-content.active {
+                        display: block;
+                    }
+                </style>
+
+                <div class="wholphin-tabs">
+                    <button type="button" class="wholphin-tab active" data-tab="settings">Application Settings</button>
+                    <button type="button" class="wholphin-tab" data-tab="home">Home Screen Sections</button>
+                    <button type="button" class="wholphin-tab" data-tab="nav">Navigation Drawer</button>
+                </div>
+
                 <form id="WholphinConfigForm">
+                    <!-- Application Settings Tab -->
+                    <div class="wholphin-tab-content active" data-tab-content="settings">
+                        <h3 style="margin-bottom: 15px;">Application Settings</h3>
 
-                    <h3 style="margin-bottom: 15px;">Application Settings</h3>
-
-                    <div class="inputContainer">
+                        <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="LoginBackgroundImageUrl">Login Background Image URL</label>
                         <input id="LoginBackgroundImageUrl" name="LoginBackgroundImageUrl" type="text" is="emby-input" />
                         <div class="fieldDescription">URL of the login background image.</div>
@@ -60,32 +101,51 @@
                     </div>
                     <hr class="input-divider" style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 30px 0;" />
 
-                    <div id="homeSectionsContainer" style="margin-top: 30px;">
-                        <h3 style="margin-bottom: 15px;">Home Screen Sections</h3>
-                        <div class="fieldDescription" style="margin-bottom: 15px;">
-                            Configure the sections that appear on the Android TV app home screen.
+                        <div>
+                            <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                                <span>Save</span>
+                            </button>
                         </div>
-                        <div id="sectionsList" style="margin: 20px 0;"></div>
-                        <button type="button" is="emby-button" class="raised" id="addSectionBtn" style="margin-top: 10px;">
-                            <span>Add Section</span>
-                        </button>
                     </div>
 
-                    <div id="navDrawerContainer" style="margin-top: 30px;">
-                        <h3 style="margin-bottom: 15px;">Navigation Drawer Items</h3>
-                        <div class="fieldDescription" style="margin-bottom: 15px;">
-                            Configure the items that appear in the Android TV app navigation drawer.
+                    <!-- Home Screen Sections Tab -->
+                    <div class="wholphin-tab-content" data-tab-content="home">
+                        <div id="homeSectionsContainer">
+                            <h3 style="margin-bottom: 15px;">Home Screen Sections</h3>
+                            <div class="fieldDescription" style="margin-bottom: 15px;">
+                                Configure the sections that appear on the Android TV app home screen.
+                            </div>
+                            <div id="sectionsList" style="margin: 20px 0;"></div>
+                            <button type="button" is="emby-button" class="raised" id="addSectionBtn" style="margin-top: 10px;">
+                                <span>Add Section</span>
+                            </button>
                         </div>
-                        <div id="navDrawerList" style="margin: 20px 0;"></div>
-                        <button type="button" is="emby-button" class="raised" id="addNavDrawerItemBtn" style="margin-top: 10px;">
-                            <span>Add Item</span>
-                        </button>
+
+                        <div style="margin-top: 30px;">
+                            <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                                <span>Save</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
-                            <span>Save</span>
-                        </button>
+                    <!-- Navigation Drawer Tab -->
+                    <div class="wholphin-tab-content" data-tab-content="nav">
+                        <div id="navDrawerContainer">
+                            <h3 style="margin-bottom: 15px;">Navigation Drawer Items</h3>
+                            <div class="fieldDescription" style="margin-bottom: 15px;">
+                                Configure the items that appear in the Android TV app navigation drawer.
+                            </div>
+                            <div id="navDrawerList" style="margin: 20px 0;"></div>
+                            <button type="button" is="emby-button" class="raised" id="addNavDrawerItemBtn" style="margin-top: 10px;">
+                                <span>Add Item</span>
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 30px;">
+                            <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                                <span>Save</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -255,6 +315,25 @@
             var TemplateConfig = {
                 pluginUniqueId: 'f143773e-eb25-420f-8a30-f550347aa0a2'
             };
+
+            // Tab switching functionality
+            document.querySelectorAll('.wholphin-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    var targetTab = this.getAttribute('data-tab');
+
+                    // Remove active class from all tabs and contents
+                    document.querySelectorAll('.wholphin-tab').forEach(function(t) {
+                        t.classList.remove('active');
+                    });
+                    document.querySelectorAll('.wholphin-tab-content').forEach(function(c) {
+                        c.classList.remove('active');
+                    });
+
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    document.querySelector('[data-tab-content="' + targetTab + '"]').classList.add('active');
+                });
+            });
 
             var homeSections = [];
             var navDrawerItems = [];
