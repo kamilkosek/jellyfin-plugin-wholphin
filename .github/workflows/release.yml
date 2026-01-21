@@ -69,6 +69,15 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
           VERSION="${{ steps.ver.outputs.VERSION }}"
+
+          # If in detached HEAD (tag push), checkout main branch
+          if git symbolic-ref -q HEAD >/dev/null; then
+            echo "On branch, proceeding..."
+          else
+            echo "Detached HEAD detected, checking out main branch..."
+            git checkout main
+          fi
+
           git add manifest.json
           git commit -m "chore(release): update manifest for ${VERSION}" || echo "No changes to commit"
           git push
