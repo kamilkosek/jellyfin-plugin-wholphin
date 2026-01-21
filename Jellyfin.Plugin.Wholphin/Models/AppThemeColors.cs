@@ -28,12 +28,16 @@ public enum AppThemeColors
     /// <summary>
     /// OLED Black theme.
     /// </summary>
-    OLEDBLACK = 4,
+#pragma warning disable CA1707 // Identifiers should not contain underscores
+    OLED_BLACK = 4,
+#pragma warning restore CA1707 // Identifiers should not contain underscores
 
     /// <summary>
     /// Bold Blue theme.
     /// </summary>
-    BOLDBLUE = 5,
+#pragma warning disable CA1707 // Identifiers should not contain underscores
+    BOLD_BLUE = 5,
+#pragma warning restore CA1707 // Identifiers should not contain underscores
 
     /// <summary>
     /// Unrecognized theme (defaults to Purple).
