@@ -2,7 +2,7 @@
 
 A Jellyfin server plugin that supports the Wholphin Android TV app and provides advanced UI customization options.
 > [!IMPORTANT]
-> This plugin is currenlty only usable with a (custom fork)[https://github.com/kamilkosek/Wholphin/releases] of Wholphin!
+> This plugin is currenlty only usable with a [custom fork](https://github.com/kamilkosek/Wholphin/releases)of Wholphin!
 
 
 ## Features
