@@ -71,13 +71,8 @@ jobs:
           VERSION="${{ steps.ver.outputs.VERSION }}"
 
           # If in detached HEAD (tag push), checkout main branch
-          if git symbolic-ref -q HEAD >/dev/null; then
-            echo "On branch, proceeding..."
-          else
+          if ! git symbolic-ref -q HEAD; then
             echo "Detached HEAD detected, checking out main branch..."
             git checkout main
-          fi
-
-          git add manifest.json
-          git commit -m "chore(release): update manifest for ${VERSION}" || echo "No changes to commit"
-          git push
+          else
+            echo "On branch, proceeding..."
