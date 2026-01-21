@@ -1,6 +1,9 @@
 # Jellyfin Plugin Wholphin
 
 A Jellyfin server plugin that supports the Wholphin Android TV app and provides advanced UI customization options.
+> [!IMPORTANT]
+> This plugin is currenlty only usable with a (custom fork)[https://github.com/kamilkosek/Wholphin/releases] of Wholphin!
+
 
 ## Features
 
@@ -22,6 +25,19 @@ Currenlty only pushing the Seerr URL is supported, more settings will follow soo
 
 ## Installation
 
+### Via Plugin Repository (Recommended)
+
+1. Open your Jellyfin server dashboard
+2. Navigate to **Dashboard** → **Plugins** → **Repositories**
+3. Click the **+** button to add a new repository
+4. Enter the following details:
+   - **Repository Name**: `Wholphin Plugin`
+   - **Repository URL**: `https://raw.githubusercontent.com/kamilkosek/jellyfin-plugin-wholphin/main/manifest.json`
+5. Click **Save**
+6. Go to **Catalog** tab
+7. Find **Wholphin** in the plugin list and click **Install**
+8. Restart your Jellyfin server when prompted
+
 ### Manual Installation
 
 1. Download the latest `Jellyfin.Plugin.Wholphin.dll` from [Releases](https://github.com/kamilkosek/jellyfin-plugin-wholphin/releases)
@@ -30,6 +46,10 @@ Currenlty only pushing the Seerr URL is supported, more settings will follow soo
    - Windows: `C:\ProgramData\Jellyfin\Server\plugins\Wholphin\`
    - macOS: `/var/lib/jellyfin/plugins/Wholphin/`
 3. Restart your Jellyfin server
+
+## Usage
+
+See [usage](./docs/usage.md)
 
 ## API Endpoints
 
