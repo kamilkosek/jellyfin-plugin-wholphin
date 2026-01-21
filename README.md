@@ -47,21 +47,6 @@ Retrieves the login background configuration (no authentication required).
 }
 ```
 
-### `GET /wholphin/capabilities`
-Returns plugin version and supported features (no authentication required).
-
-**Response:**
-```json
-{
-  "version": "1.1.0",
-  "features": {
-    "loginBackground": true,
-    "settings": true,
-    "homeConfiguration": true
-  }
-}
-```
-
 ### `GET /wholphin/settings`
 Retrieves plugin settings (authentication required).
 Currently only pushing the Seerr URL is supported, more to follow soon.
